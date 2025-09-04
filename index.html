@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nepali Tola ⇄ USD Gold Calculator</title>
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --card: #161616;
+      --soft: #1f1f1f;
+      --text: #ffffff;
+      --muted: #b0b0b0;
+      --accent: #ffffff;
+      --good: #19c37d;
+      --warn: #ffcc00;
+    }
+    body.light {
+      --bg: #ffffff;
+      --card: #f4f4f4;
+      --soft: #e9e9e9;
+      --text: #000000;
+      --muted: #555555;
+      --accent: #000000;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial;
+      color: var(--text);
+      background: var(--bg);
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      transition: background 0.3s, color 0.3s;
+    }
+    .wrap {
+      width: 100%;
+      max-width: 520px;
+      background-color: var(--card);
+      border: 1px solid #333;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+      padding: 20px 18px;
+      transition: background 0.3s;
+    }
+    .title {
+      text-align: center;
+      margin: 6px 0 14px;
+      font-weight: 800;
+      font-size: clamp(1.3rem, 2.6vw, 1.6rem);
+      color: var(--text);
+    }
+    .hint {
+      text-align: center;
+      color: var(--muted);
+      font-size: .92rem;
+      margin-bottom: 12px;
+    }
+    label {
+      display: block;
+      font-size: .95rem;
+      margin: 10px 2px 6px;
+      color: var(--text);
+      font-weight: 600;
+    }
+    input, select, button {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid #333;
+      background: var(--soft);
+      color: var(--text);
+      padding: 12px;
+      font-size: 1rem;
+      outline: none;
+      transition: .2s ease;
+    }
+    input::placeholder { color: #777; }
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(255,255,255,.15);
+    }
+    select {
+      appearance: none;
+      background-image: linear-gradient(45deg, transparent 50%, #aaa 50%),
+                        linear-gradient(135deg, #aaa 50%, transparent 50%);
+      background-position: calc(100% - 20px) calc(1.1em),
+                           calc(100% - 15px) calc(1.1em);
+      background-size: 5px 5px;
+      background-repeat: no-repeat;
+    }
+    button {
+      margin-top: 10px;
+      background: var(--text);
+      color: var(--bg);
+      border: none;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 6px 14px rgba(255,255,255,.15);
+      transition: background .2s ease, color .2s ease;
+    }
+    button:hover { background: #e5e5e5; }
+    .result {
+      margin-top: 14px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 14px;
+      line-height: 1.6;
+      font-size: 1rem;
+    }
+    .ok { color: var(--good); font-weight: 700; }
+    .warn { color: var(--warn); font-weight: 700; }
+    .fine {
+      font-size: .82rem;
+      color: var(--muted);
+      margin-top: 10px;
+      text-align: center;
+    }
+    .theme-toggle {
+      text-align: right;
+      margin-bottom: 10px;
+    }
+    .theme-toggle button {
+      background: transparent;
+      border: 1px solid var(--muted);
+      border-radius: 6px;
+      padding: 6px 10px;
+      cursor: pointer;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="theme-toggle">
+      <button id="themeBtn">🌙 / ☀️</button>
+    </div>
+    <h1 class="title">Gold Calculator (Nepali Units)</h1>
+    <p class="hint">1 tola = <b>11.66 g</b> · Currency: <b>USD</b></p>
+
+    <!-- 1) WHAT TYPE -->
+    <label for="type">What Type (e.g., chain, ring, coin)</label>
+    <input id="type" type="text" placeholder="Chain" autocomplete="off" />
+
+    <!-- 2) UNIT DROPDOWN -->
+    <label for="unit">Select Unit</label>
+    <select id="unit" onchange="updateWeightLabel()">
+      <option value="grams">Grams</option>
+      <option value="tola">Tola</option>
+      <option value="laal">Laal</option>
+      <option value="chatak">Chatak</option>
+      <option value="pau">Pau</option>
+      <option value="dharni">Dharni</option>
+      <option value="kg">Kilogram</option>
+    </select>
+
+    <!-- 3) WEIGHT -->
+    <label for="weight" id="weightLabel">Enter Weight (grams)</label>
+    <input id="weight" type="number" inputmode="decimal" min="0" step="0.01" placeholder="e.g. 15.5" />
+
+    <!-- 4) GOLD PRICE -->
+    <label for="price">Gold Price (USD per gram)</label>
+    <input id="price" type="number" inputmode="decimal" min="0" step="0.01" placeholder="e.g. 75.00" />
+
+    <!-- 5) CALCULATE -->
+    <button onclick="calculate()">Calculate</button>
+
+    <!-- 6) RESULT -->
+    <div class="result" id="result">Result will appear here…</div>
+
+    <div class="fine">Using Nepali tola standard: 1 tola = 11.66 g</div>
+  </div>
+
+  <script>
+    const TOLA_IN_GRAMS = 11.66;
+    const conversions = {
+      grams: 1,
+      tola: TOLA_IN_GRAMS,
+      laal: TOLA_IN_GRAMS * 0.05,   // ~0.05 tola
+      chatak: TOLA_IN_GRAMS * 0.25, // 0.25 tola
+      pau: TOLA_IN_GRAMS * 4,       // 4 tola
+      dharni: TOLA_IN_GRAMS * 200,  // 200 tola
+      kg: 1000                      // 1 kg = 1000 g
+    };
+
+    function updateWeightLabel() {
+      const unit = document.getElementById('unit').value;
+      const lbl = document.getElementById('weightLabel');
+      lbl.textContent = `Enter Weight (${unit})`;
+    }
+
+    function fmt(n, d=2) {
+      return Number(n).toLocaleString(undefined, {
+        minimumFractionDigits: d,
+        maximumFractionDigits: d
+      });
+    }
+
+    function calculate() {
+      const type = (document.getElementById('type').value || 'Item').trim();
+      const unit = document.getElementById('unit').value;
+      const weight = parseFloat(document.getElementById('weight').value);
+      const pricePerGram = parseFloat(document.getElementById('price').value);
+      const out = document.getElementById('result');
+
+      if (!weight || weight <= 0 || !pricePerGram || pricePerGram <= 0) {
+        out.innerHTML = '⚠️ <span class="warn">Please enter valid numbers for weight and price.</span>';
+        return;
+      }
+
+      const grams = weight * conversions[unit];
+      const tola = grams / TOLA_IN_GRAMS;
+      const totalUSD = grams * pricePerGram;
+
+      out.innerHTML = `
+        <div><b>${type}</b></div>
+        <div>• Unit chosen: <b>${unit}</b></div>
+        <div>• Weight: <b>${fmt(grams,2)} g</b> (${fmt(tola,3)} tola)</div>
+        <div>• Price per gram: <b>$${fmt(pricePerGram,2)}</b></div>
+        <hr style="border:none;border-top:1px solid #333;margin:8px 0;">
+        <div>Total Value: <span class="ok">$${fmt(totalUSD,2)} USD</span></div>
+      `;
+    }
+
+    // Theme toggle
+    document.getElementById("themeBtn").addEventListener("click", () => {
+      document.body.classList.toggle("light");
+    });
+
+    updateWeightLabel();
+  </script>
+</body>
+</html>
